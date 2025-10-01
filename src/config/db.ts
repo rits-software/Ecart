@@ -38,8 +38,9 @@ export const AppDataSource = new DataSource({
   password: DB_PASS,
   database: DB_NAME,
   synchronize: false, // ⚠️ Only for dev; use migrations in production make this true create all table automatically
+  dropSchema: false,  
   logging: ["error"],
-  entities: [__dirname + "/../models/*.ts"],
+  entities: [__dirname + "/../models/**/*.ts"],
 });
 
 // Function to connect DB

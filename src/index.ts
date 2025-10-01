@@ -5,7 +5,7 @@ import authRoutes from "./routes/authRoutes";
 import { connectDB } from "./config/db";
 import "reflect-metadata"; 
 import vendorRoutes from "./routes/master/vendorRoutes";
-import productRoutes from "./routes/master/productroutes";
+import productRoutes from "./routes/master/productRoutes";
 dotenv.config();
 const app: Application = express();
 const PORT = process.env.PORT || 5000;

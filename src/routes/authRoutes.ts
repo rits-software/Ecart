@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { signup, login } from "../auth/authController";
 import { verifyToken, requireRoles } from "../auth/middleware";
+import { tokenBlocklist } from "../auth/tokenBlocklist";
 
 const router = Router();
 
@@ -27,13 +28,11 @@ router.get("/all-users", verifyToken, requireRoles(["admin"]), (req, res) => {
   res.json({ message: "Admin access granted" });
 });
 
-router.post("/logout", (req, res) => {
-  res.clearCookie("token", {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "strict",
-  });
-  return res.json({ message: "Logged out successfully" });
+router.post("/logout", verifyToken, (req, res) => {
+  const authHeader = req.headers["authorization"];
+  const token = authHeader?.split(" ")[1];
+  if (token) tokenBlocklist.add(token); // add token to blocklist
+  res.json({ message: "Logged out successfully" });
 });
 
 export default router;

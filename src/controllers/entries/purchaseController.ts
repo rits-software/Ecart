@@ -34,16 +34,37 @@ export const createPurchase = async (req: Request, res: Response) => {
   try {
     const purchaseData = req.body;
 
-    // Calculate subtotal for each item
-    purchaseData.items = purchaseData.items.map((item: any) => ({
-      ...item,
-      subtotal: item.quantity * item.price,
-    }));
+    // 1. Fetch Vendor
+    const vendorRepo = AppDataSource.getRepository("Vendor");
+    const vendor = await vendorRepo.findOneBy({ id: purchaseData.vendor });
+    if (!vendor) return res.status(400).json({ message: "Vendor not found" });
 
-    // Calculate total
-    purchaseData.total = purchaseData.items.reduce((acc: number, item: any) => acc + item.subtotal, 0);
+    // 2. Process items
+    const productRepo = AppDataSource.getRepository("Product");
+    const items: any[] = [];
 
-    const newPurchase = purchaseRepo.create(purchaseData);
+    for (const item of purchaseData.items) {
+      const product = await productRepo.findOneBy({ id: item.product });
+      if (!product) return res.status(400).json({ message: `Product ${item.product} not found` });
+
+      items.push({
+        ...item,
+        product,
+        subtotal: item.quantity * item.price,
+      });
+    }
+
+    // 3. Calculate total
+    const total = items.reduce((acc, i) => acc + i.subtotal, 0);
+
+    // 4. Create purchase object
+    const newPurchase = purchaseRepo.create({
+      vendor,
+      items,
+      total,
+      notes: purchaseData.notes,
+    });
+
     const saved = await purchaseRepo.save(newPurchase);
     res.status(201).json(saved);
   } catch (err) {
@@ -51,6 +72,7 @@ export const createPurchase = async (req: Request, res: Response) => {
     res.status(500).json({ message: "Failed to create purchase" });
   }
 };
+
 
 export const updatePurchase = async (req: Request, res: Response) => {
   const { id } = req.params;

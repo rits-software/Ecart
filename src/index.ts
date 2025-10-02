@@ -6,6 +6,7 @@ import { connectDB } from "./config/db";
 import "reflect-metadata"; 
 import vendorRoutes from "./routes/master/vendorRoutes";
 import productRoutes from "./routes/master/productRoutes";
+import purchaseRoutes from "./routes/entries/purchaseRoutes";
 dotenv.config();
 const app: Application = express();
 const PORT = process.env.PORT || 5000;
@@ -41,6 +42,7 @@ app.use("/api/auth", authRoutes);
 //master routes
 app.use("/api/vendors", vendorRoutes);
 app.use("/api/products", productRoutes);
+app.use("/api/purchase", purchaseRoutes);
 
 app.listen(PORT, () => {
   console.log(`🚀 Server running on http://localhost:${PORT}`);

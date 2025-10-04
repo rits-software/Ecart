@@ -2,10 +2,8 @@ import {
   Entity, 
   PrimaryColumn, 
   Column, 
-  OneToMany, 
   BeforeInsert 
 } from "typeorm";
-import { Product } from "../master/product";
 import { AppDataSource } from "../../config/db";
 
 @Entity()
@@ -21,9 +19,6 @@ export class Vendor {
 
   @Column({ nullable: true })
   address?: string;
-
-  @OneToMany(() => Product, (product) => product.vendor)
-  products!: Product[];
 
   @BeforeInsert()
   async generateId() {

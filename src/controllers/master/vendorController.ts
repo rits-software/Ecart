@@ -17,7 +17,7 @@ export const createVendor = async (req: Request, res: Response) => {
 
 export const getVendors = async (req: Request, res: Response) => {
   try {
-    const vendors = await vendorRepo.find({ relations: ["products"] });
+    const vendors = await vendorRepo.find();
     res.json(vendors);
   } catch (err) {
     res.status(500).json({ message: "Failed to fetch vendors", error: err });
@@ -28,7 +28,6 @@ export const getVendorById = async (req: Request, res: Response) => {
   try {
     const vendor = await vendorRepo.findOne({
       where: { id: req.params.id },
-      relations: ["products"],
     });
     if (!vendor) return res.status(404).json({ message: "Vendor not found" });
     res.json(vendor);

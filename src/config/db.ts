@@ -1,9 +1,11 @@
 import "reflect-metadata";
 import { DataSource } from "typeorm";
+import { join } from "path";
 import dotenv from "dotenv";
 
 dotenv.config();
 
+const isCompiled = __filename.endsWith(".js");
 // Read DB details from .env
 const DB_ENGINE = process.env.DB_ENGINE?.toLowerCase();
 const DB_HOST = process.env.DB_HOST;
@@ -40,7 +42,11 @@ export const AppDataSource = new DataSource({
   synchronize: false, // ⚠️ Only for dev; use migrations in production make this true create all table automatically
   dropSchema: false,  
   logging: ["error"],
-  entities: [__dirname + "/../models/**/*.ts"],
+  entities: [
+  isCompiled
+    ? join(__dirname, "../models/**/*.js")  // for Docker / production
+    : join(__dirname, "../models/**/*.ts"), // for dev
+],
 });
 
 // Function to connect DB

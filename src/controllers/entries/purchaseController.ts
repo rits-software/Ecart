@@ -4,11 +4,11 @@ import { Purchase } from "../../models/entries/Purchase";
 import { AppDataSource } from "../../config/db";
 import { Vendor } from "../../models/master/vendor";
 import { Product } from "../../models/master/product";
+import { PurchaseItem } from "../../models/entries/PurchaseItem";
 
 const purchaseRepo = AppDataSource.getRepository(Purchase);
 const vendorRepo = AppDataSource.getRepository(Vendor);
 const productRepo = AppDataSource.getRepository(Product);
-
 
 export const getPurchases = async (req: Request, res: Response) => {
   try {
@@ -40,7 +40,8 @@ export const getPurchase = async (req: Request, res: Response) => {
       relations: ["vendor", "items", "items.product"],
     });
 
-    if (!purchase) return res.status(404).json({ message: "Purchase not found" });
+    if (!purchase)
+      return res.status(404).json({ message: "Purchase not found" });
 
     const result = {
       id: purchase.id,
@@ -66,100 +67,6 @@ export const getPurchase = async (req: Request, res: Response) => {
   }
 };
 
-// export const createPurchase = async (req: Request, res: Response) => {
-//   try {
-//     const purchaseData = req.body;
-
-//     // 1. Fetch Vendor
-//     const vendorRepo = AppDataSource.getRepository("Vendor");
-//     const vendor = await vendorRepo.findOneBy({ id: purchaseData.vendor });
-//     if (!vendor) return res.status(400).json({ message: "Vendor not found" });
-
-//     // 2. Process items
-//     const productRepo = AppDataSource.getRepository("Product");
-//     const items: any[] = [];
-
-//     for (const item of purchaseData.items) {
-//       const product = await productRepo.findOneBy({ id: item.product });
-//       if (!product)
-//         return res
-//           .status(400)
-//           .json({ message: `Product ${item.product} not found` });
-
-//       items.push({
-//         ...item,
-//         product,
-//         subtotal: item.quantity * item.price,
-//       });
-//     }
-
-//     // 3. Calculate total
-//     const total = items.reduce((acc, i) => acc + i.subtotal, 0);
-
-//     // 4. Create purchase object
-//     const newPurchase = purchaseRepo.create({
-//       vendor,
-//       items,
-//       total,
-//       notes: purchaseData.notes,
-//     });
-
-//     const saved = await purchaseRepo.save(newPurchase);
-//     res.status(201).json(saved);
-//   } catch (err) {
-//     console.error(err);
-//     res.status(500).json({ message: "Failed to create purchase" });
-//   }
-// };
-
-// export const updatePurchase = async (req: Request, res: Response) => {
-//   const { id } = req.params;
-//   try {
-//     const purchase = await purchaseRepo.findOne({
-//       where: { id },
-//       relations: ["items"],
-//     });
-//     if (!purchase) return res.status(404).json({ message: "Purchase not found" });
-
-//     const updateData = req.body;
-
-//     // 1. Fetch Vendor
-//     const vendor = await vendorRepo.findOneBy({ id: updateData.vendor_id });
-//     if (!vendor) return res.status(400).json({ message: "Vendor not found" });
-
-//     // 2. Process items
-//     const items: any[] = [];
-//     for (const item of updateData.items) {
-//       const product = await productRepo.findOneBy({ id: item.product_id });
-//       if (!product) {
-//         return res.status(400).json({ message: `Product ${item.product_id} not found` });
-//       }
-
-//       items.push({
-//         ...item,
-//         product,
-//         subtotal: Number(item.quantity) * Number(item.price),
-//       });
-//     }
-
-//     // 3. Calculate total
-//     const total = items.reduce((acc, i) => acc + i.subtotal, 0);
-
-//     // 4. Merge update into purchase
-//     purchase.vendor = vendor;
-//     purchase.items = items;
-//     purchase.total = total;
-//     purchase.notes = updateData.notes;
-
-//     const updated = await purchaseRepo.save(purchase);
-
-//     res.json(updated);
-//   } catch (err) {
-//     console.error(err);
-//     res.status(500).json({ message: "Failed to update purchase" });
-//   }
-// };
-
 export const createPurchase = async (req: Request, res: Response) => {
   try {
     const purchaseData = req.body;
@@ -173,7 +80,9 @@ export const createPurchase = async (req: Request, res: Response) => {
     for (const item of purchaseData.items) {
       const product = await productRepo.findOneBy({ id: item.product_id });
       if (!product) {
-        return res.status(400).json({ message: `Product ${item.product_id} not found` });
+        return res
+          .status(400)
+          .json({ message: `Product ${item.product_id} not found` });
       }
 
       items.push({
@@ -221,7 +130,6 @@ export const createPurchase = async (req: Request, res: Response) => {
   }
 };
 
-
 export const updatePurchase = async (req: Request, res: Response) => {
   const { id } = req.params;
   try {
@@ -229,7 +137,8 @@ export const updatePurchase = async (req: Request, res: Response) => {
       where: { id },
       relations: ["items", "items.product", "vendor"],
     });
-    if (!purchase) return res.status(404).json({ message: "Purchase not found" });
+    if (!purchase)
+      return res.status(404).json({ message: "Purchase not found" });
 
     const updateData = req.body;
 
@@ -237,34 +146,65 @@ export const updatePurchase = async (req: Request, res: Response) => {
     const vendor = await vendorRepo.findOneBy({ id: updateData.vendor_id });
     if (!vendor) return res.status(400).json({ message: "Vendor not found" });
 
-    // 2. Process items
-    const items: any[] = [];
+    // 2. Track existing items
+    const existingItems = purchase.items;
+
+    // 3. Build final items
+    const finalItems: PurchaseItem[] = [];
     for (const item of updateData.items) {
       const product = await productRepo.findOneBy({ id: item.product_id });
       if (!product) {
-        return res.status(400).json({ message: `Product ${item.product_id} not found` });
+        return res
+          .status(400)
+          .json({ message: `Product ${item.product_id} not found` });
       }
 
-      items.push({
-        product,
-        quantity: Number(item.quantity),
-        price: Number(item.price),
-        subtotal: Number(item.quantity) * Number(item.price),
-      });
+      let purchaseItem: PurchaseItem;
+
+      if (item.id) {
+        // 🔹 Update existing item
+        const existing = existingItems.find((i) => i.id === item.id);
+        if (existing) {
+          existing.product = product;
+          existing.quantity = Number(item.quantity);
+          existing.price = Number(item.price);
+          existing.subtotal = existing.quantity * existing.price;
+          purchaseItem = existing;
+        } else {
+          // If id is passed but not found → create fresh
+          purchaseItem = purchaseRepo.manager.create(PurchaseItem, {
+            product,
+            quantity: Number(item.quantity),
+            price: Number(item.price),
+            subtotal: Number(item.quantity) * Number(item.price),
+          });
+        }
+      } else {
+        // 🔹 New item
+        purchaseItem = purchaseRepo.manager.create(PurchaseItem, {
+          product,
+          quantity: Number(item.quantity),
+          price: Number(item.price),
+          subtotal: Number(item.quantity) * Number(item.price),
+        });
+      }
+
+      finalItems.push(purchaseItem);
     }
 
-    // 3. Calculate total
-    const total = items.reduce((acc, i) => acc + i.subtotal, 0);
+    // 4. Calculate total
+    const total = finalItems.reduce((acc, i) => acc + i.subtotal, 0);
 
-    // 4. Update purchase
+    // 5. Update purchase entity
     purchase.vendor = vendor;
-    purchase.items = items;
+    purchase.items = finalItems;
     purchase.total = total;
     purchase.notes = updateData.notes;
 
+    // Save with cascade on items
     const updated = await purchaseRepo.save(purchase);
 
-    // 5. Return formatted response
+    // 6. Return response
     const result = {
       id: updated.id,
       total: updated.total,
@@ -288,7 +228,6 @@ export const updatePurchase = async (req: Request, res: Response) => {
     res.status(500).json({ message: "Failed to update purchase" });
   }
 };
-
 
 export const deletePurchase = async (req: Request, res: Response) => {
   const { id } = req.params;

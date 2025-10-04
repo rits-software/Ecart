@@ -1,4 +1,4 @@
-// src/entities/PurchaseItem.ts
+// src/entities/SalesItem.ts
 import {
   Entity,
   Column,
@@ -7,20 +7,18 @@ import {
   BeforeInsert,
   PrimaryColumn,
 } from "typeorm";
-import { Purchase } from "./Purchase";
+import { Sales } from "./Sales";
 import { Product } from "../master/product";
 import { AppDataSource } from "../../config/db";
 
 @Entity()
-export class PurchaseItem {
+export class SalesItem {
   @PrimaryColumn()
   id!: string;
 
-  @ManyToOne(() => Purchase, (purchase) => purchase.items, {
-    onDelete: "CASCADE",
-  })
-  @JoinColumn({ name: "purchase_id" })
-  purchase!: Purchase;
+  @ManyToOne(() => Sales, (sales) => sales.items, { onDelete: "CASCADE" })
+  @JoinColumn({ name: "sales_id" })
+  sales!: Sales;
 
   @ManyToOne(() => Product)
   @JoinColumn({ name: "product_id" })
@@ -37,21 +35,21 @@ export class PurchaseItem {
 
   @BeforeInsert()
   async generateId() {
-    const repo = AppDataSource.getRepository(PurchaseItem);
+    const repo = AppDataSource.getRepository(SalesItem);
 
-    // Find the last inserted PurchaseItem
+    // Find last SalesItem
     const lastItem = await repo
       .createQueryBuilder("item")
       .orderBy("CAST(SUBSTRING(item.id, 3) AS UNSIGNED)", "DESC")
       .getOne();
 
-    let nextNumber = 1001; // Start from PI1001
+    let nextNumber = 1001; // Start from SI1001
 
     if (lastItem && lastItem.id) {
-      const lastNumber = parseInt(lastItem.id.replace("PI", ""), 10);
+      const lastNumber = parseInt(lastItem.id.replace("SI", ""), 10);
       nextNumber = lastNumber + 1;
     }
 
-    this.id = `PI${nextNumber}`;
+    this.id = `SI${nextNumber}`;
   }
 }

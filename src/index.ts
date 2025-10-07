@@ -15,6 +15,9 @@ import stateRoutes from "./routes/common/stateRoutes";
 import countryRoutes from "./routes/common/countryRoutes";
 import pincodeRoutes from "./routes/common/pincodeRoutes";
 import categoryRoutes from "./routes/common/categoryRoutes";
+import unitRoutes from "./routes/common/unitRoutes";
+import hsnRotes from "./routes/common/hsncodeRoutes";
+import paymentmode from "./routes/common/paymentmodeRoutes";
 
 dotenv.config();
 const app: Application = express();
@@ -63,6 +66,9 @@ app.use("/api/state", stateRoutes);
 app.use("/api/country", countryRoutes);
 app.use("/api/pincode", pincodeRoutes);
 app.use("/api/category", categoryRoutes);
+app.use("/api/unit", unitRoutes);
+app.use("/api/hsncode", hsnRotes);
+app.use("/api/paymentmode", paymentmode);
 
 // Health check endpoint
 app.get("/health", (req, res) => {
